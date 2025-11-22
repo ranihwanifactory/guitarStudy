@@ -33,7 +33,7 @@ const chordSchema: Schema = {
         startString: { type: Type.INTEGER, description: "String index (1-6) where barre starts." },
         endString: { type: Type.INTEGER, description: "String index (1-6) where barre ends." },
       },
-      description: "Information about barre chord technique if applicable.",
+      description: "Information about barre chord technique if applicable. Set to null if not a barre chord.",
     },
     description: {
       type: Type.STRING,
@@ -44,7 +44,7 @@ const chordSchema: Schema = {
       enum: ["Beginner", "Intermediate", "Advanced"],
     },
   },
-  required: ["chordName", "frets", "fingers", "startingFret", "description", "difficulty"],
+  required: ["chordName", "frets", "fingers", "startingFret", "barre", "description", "difficulty"],
 };
 
 export const generateChord = async (query: string): Promise<ChordData> => {
@@ -59,9 +59,14 @@ export const generateChord = async (query: string): Promise<ChordData> => {
       },
     });
 
-    const text = response.text;
+    let text = response.text;
     if (!text) {
       throw new Error("No data received from Gemini.");
+    }
+
+    // Clean up markdown code blocks if present
+    if (text.startsWith("```")) {
+      text = text.replace(/^```(json)?\n?/, "").replace(/\n?```$/, "");
     }
 
     const data = JSON.parse(text) as ChordData;

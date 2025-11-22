@@ -13,23 +13,33 @@ const App: React.FC = () => {
     data: null,
   });
 
-  const handleSearch = useCallback(async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!query.trim()) return;
+  const performSearch = async (searchQuery: string) => {
+    if (!searchQuery.trim()) return;
 
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      const data: ChordData = await generateChord(query);
+      const data: ChordData = await generateChord(searchQuery);
       setState({ isLoading: false, error: null, data });
     } catch (err: any) {
+      console.error("Search failed:", err);
       setState({ 
         isLoading: false, 
         error: "코드를 불러오는 데 실패했습니다. 다시 시도해주세요.", 
         data: null 
       });
     }
+  };
+
+  const handleSearch = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    performSearch(query);
   }, [query]);
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setQuery(suggestion);
+    performSearch(suggestion);
+  };
 
   const suggestions = ["C Major", "G7", "F#m", "Dsus4", "Bm7b5"];
 
@@ -89,12 +99,7 @@ const App: React.FC = () => {
             {suggestions.map((s) => (
               <button
                 key={s}
-                onClick={() => {
-                  setQuery(s);
-                  // To allow state update to propagate before triggering search, we could use useEffect or just manual trigger wrapper
-                  // Simple approach: set query then user clicks or we handle it via ref. 
-                  // For better UX in this strict pattern, let's just set query.
-                }}
+                onClick={() => handleSuggestionClick(s)}
                 className="px-3 py-1 text-sm bg-slate-800/50 border border-white/5 rounded-full text-slate-400 hover:text-wood-300 hover:border-wood-500/30 transition-colors"
               >
                 {s}
